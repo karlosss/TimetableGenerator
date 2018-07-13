@@ -1,0 +1,5 @@
+vgcore.*
+*h.gch
+.idea
+cmake-build-debug
+a.out

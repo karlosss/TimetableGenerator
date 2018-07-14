@@ -12,17 +12,18 @@
 
 using namespace std;
 
+const string CONFIG_NAME = "cfg";
 const string SOURCES_ROOT = "/home/karlos/timetable_sources";
 const vector<unordered_set<int>> SUBJECT_CONTAINERS = {
         {2},
-        {3, 4},
-        {3, 4},
-        {3, 4},
-        {3, 4},
-        {3, 4},
-        {3, 4},
         {4},
-        {4}
+        {4},
+        {3, 4},
+        {3, 4},
+        {3, 4},
+        {3, 4},
+        {3, 4},
+        {3, 4}
 };
 
 const unordered_map<string, int> CLASSES_MAPPING = {

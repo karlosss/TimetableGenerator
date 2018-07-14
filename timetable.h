@@ -56,8 +56,9 @@ public:
     bool ok();
     void generate();
     string print();
+    void print_from_perm(const vector<int> & permutation);
 private:
-    vector<int> _breed_perm;
+    unordered_set<int> _subjects_to_ignore;
     void _clear();
     vector<int> _breed(const vector<vector<int>> & v);
     int _total_col;

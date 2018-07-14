@@ -8,9 +8,6 @@
 Timetable::Timetable() {
     this->_grouping_col = 0;
     this->_parse();
-    for(int i = 0; i < BREED_SIZE; ++i){
-        this->_breed_perm.push_back(i);
-    }
 }
 
 void Timetable::_parse() {
@@ -25,23 +22,72 @@ void Timetable::_parse() {
         }
         closedir (dir);
         this->_parse_options(CONFIG_NAME);
-//        for(auto & s: this->_subjects){
-//            cout << s.print(this->_reverse_teacher_mapping, this->_reverse_student_mapping) << endl;
-//        }
-//        for(int i = 0; i < this->_together_sets.size(); ++i){
-//            cout << "TOGETHER SET: ";
-//            for(auto & it: this->_together_sets[i]){
-//                cout << this->_subjects[it].name << ", ";
-//            }
-//            cout << endl;
-//        }
-//        for(int i = 0; i < this->_not_together_sets.size(); ++i){
-//            cout << "NOT TOGETHER SET: ";
-//            for(auto & it: this->_not_together_sets[i]){
-//                cout << this->_subjects[it].name << ", ";
-//            }
-//            cout << endl;
-//        }
+        for(auto & ts: this->_together_sets){
+            Subject s;
+            unordered_map<int, vector<int>> student_subject;
+            for(auto & it: ts){
+                this->_subjects_to_ignore.insert(it);
+                s.name += this->_subjects[it].name;
+                s.name += " + ";
+                for(auto & t: this->_subjects[it].teachers){
+                    if(s.teachers.find(t) != s.teachers.end()){
+                        cout << "Cannot group subject with same teachers!" << endl;
+                        throw;
+                    }
+                    s.teachers.insert(t);
+                }
+                for(auto & c: this->_subjects[it].classes){
+                    s.classes.insert(c);
+                }
+                for(auto & stud: this->_subjects[it].students){
+                    if(s.students.find(stud) != s.students.end()){
+                        ++this->_grouping_col;
+                    }
+                    if(student_subject.find(stud) != student_subject.end()){
+                        student_subject[stud].push_back(it);
+                    }
+                    else{
+                        vector<int> tmp;
+                        tmp.push_back(it);
+                        student_subject.insert(make_pair(stud, tmp));
+                    }
+                    s.students.insert(stud);
+                }
+            }
+            for(auto & ss: student_subject){
+                if(ss.second.size() >= 2){
+                    this->_grouping_col_map.insert(ss);
+                }
+            }
+            this->_subjects.push_back(s);
+            this->_subject_mapping.insert(make_pair(s.name, this->_subjects.size()-1));
+        }
+        for(auto & s: this->_subjects){
+            cout << s.print(this->_reverse_teacher_mapping, this->_reverse_student_mapping) << endl;
+        }
+        for(int i = 0; i < this->_together_sets.size(); ++i){
+            cout << "TOGETHER SET: ";
+            for(auto & it: this->_together_sets[i]){
+                cout << this->_subjects[it].name << ", ";
+            }
+            cout << endl;
+        }
+        for(int i = 0; i < this->_not_together_sets.size(); ++i){
+            cout << "NOT TOGETHER SET: ";
+            for(auto & it: this->_not_together_sets[i]){
+                cout << this->_subjects[it].name << ", ";
+            }
+            cout << endl;
+        }
+        cout << "GROUPING COLLISIONS COUNT: " << this->_grouping_col << endl;
+        cout << "GROUPING COLLISIONS: " << endl;
+        for(auto & c: this->_grouping_col_map){
+            cout << this->_reverse_student_mapping[c.first] << ": ";
+            for(int i = 0; i < c.second.size(); ++i){
+                cout << this->_subjects[c.second[i]].name << ", ";
+            }
+            cout << endl;
+        }
         this->_construct_ok = true;
     }
     else {
@@ -252,6 +298,7 @@ bool Timetable::_generate_with_permutation(const vector<int> & permutation) {
     }
 
     for(int i = 0; i < subjects_permuted.size(); ++i){
+        if(this->_subjects_to_ignore.find(this->_subject_mapping[subjects_permuted[i].name]) != this->_subjects_to_ignore.end()) continue;
 //        cout << "PLACING SUBJECT: " << subjects_permuted[i].name << endl;
         int min = INT32_MAX;
         int min_cont = -1;
@@ -274,7 +321,6 @@ bool Timetable::_generate_with_permutation(const vector<int> & permutation) {
     }
 
     this->_total_col = 0;
-    this->_col_map;
     for(int i = 0; i < this->_subject_containers.size(); ++i){
         this->_total_col += this->_subject_containers[i].collision_cnt();
         for(auto & c: this->_subject_containers[i].collisions()){
@@ -356,6 +402,12 @@ vector<int> Timetable::_breed(const vector<vector<int>> & v) {
         out.push_back(v[x4][i]);
     }
     return out;
+}
+
+void Timetable::print_from_perm(const vector<int> &permutation) {
+    this->_generate_with_permutation(permutation);
+    cout << this->print() << endl;
+    this->_clear();
 }
 
 string Subject::print(const unordered_map<int, string> &reverse_teacher_mapping,

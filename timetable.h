@@ -57,7 +57,9 @@ public:
     void generate();
     string print();
 private:
+    vector<int> _breed_perm;
     void _clear();
+    vector<int> _breed(const vector<vector<int>> & v);
     int _total_col;
     int _grouping_col;
     unordered_map<int, vector<int>> _col_map;

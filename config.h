@@ -41,5 +41,7 @@ const unordered_map<string, int> CLASSES_MAPPING = {
         {"R7.A", 4},
 };
 
+const int BREED_SIZE = 10000;
+
 
 #endif //ROZVRH_CONFIG_H

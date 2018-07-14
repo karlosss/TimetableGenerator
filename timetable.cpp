@@ -8,6 +8,9 @@
 Timetable::Timetable() {
     this->_grouping_col = 0;
     this->_parse();
+    for(int i = 0; i < BREED_SIZE; ++i){
+        this->_breed_perm.push_back(i);
+    }
 }
 
 void Timetable::_parse() {
@@ -174,10 +177,10 @@ void Timetable::generate() {
     }
 
     vector<pair<int, vector<int>>> results;
+    vector<vector<int>> nextgen;
 
-    for(int i = 0; i < 1000; ++i){
+    for(int i = 0; i < BREED_SIZE; ++i){
         vector<int> perm = this->_random_permutation();
-
         if(this->_generate_with_permutation(perm)){
             results.push_back(make_pair(this->_total_col+this->_grouping_col, perm));
         }
@@ -188,14 +191,55 @@ void Timetable::generate() {
         this->_clear();
     }
 
+    cout << "Initial population generated." << endl;
+
     sort(results.begin(), results.end(), compar);
 
-    for(int i = 0; i < results.size()/10+1; ++i){
-        cout << "COL: " << results[i].first << ", PERM: ";
-        for(int j = 0; j < results[i].second.size(); ++j){
-            cout << results[i].second[j] << " ";
+    for(int iter = 0; iter < 1000; ++iter) {
+        for (int i = 0; i < BREED_SIZE*0.2; ++i) {
+            nextgen.push_back(results[i].second);
         }
-        cout << endl;
+        cout << "Best 20 % preserved." << endl;
+        unordered_set<int> idx;
+        for (int i = 0; i < BREED_SIZE*0.3; ++i) {
+            int x;
+            while(true){
+                x = random_int(BREED_SIZE / 5, BREED_SIZE-1);
+                if(idx.find(x) == idx.end()){
+                    idx.insert(x);
+                    break;
+                }
+            }
+            nextgen.push_back(results[x].second);
+        }
+        cout << "Random 30 % preserved." << endl;
+        idx.clear();
+        while (nextgen.size() < BREED_SIZE) {
+            nextgen.push_back(this->_breed(nextgen));
+        }
+        cout << "Breeded." << endl;
+        results.clear();
+
+        for (int i = 0; i < BREED_SIZE; ++i) {
+            if (this->_generate_with_permutation(nextgen[i])) {
+                results.push_back(make_pair(this->_total_col + this->_grouping_col, nextgen[i]));
+            } else {
+                results.push_back(make_pair(INT32_MAX, nextgen[i]));
+            }
+            this->_clear();
+        }
+
+        sort(results.begin(), results.end(), compar);
+
+        for(int i = 0; i < 10; ++i){
+            cout << "COL: " << results[i].first << ", PERM: ";
+            for(int j = 0; j < results[i].second.size(); ++j){
+                cout << results[i].second[j] << " ";
+            }
+            cout << endl;
+        }
+        cout << "--------------------------" << endl;
+        nextgen.clear();
     }
 }
 
@@ -278,6 +322,40 @@ void Timetable::_clear() {
     for(int i = 0; i < this->_subject_containers.size(); ++i){
         this->_subject_containers[i].clear();
     }
+}
+
+vector<int> Timetable::_breed(const vector<vector<int>> & v) {
+    vector<int> out;
+
+    int x1, x2, x3, x4;
+
+    x1 = random_int(0, (BREED_SIZE * 0.5) - 1);
+    while (true) {
+        x2 = random_int(0, (BREED_SIZE * 0.5) - 1);
+        if (x1 != x2) break;
+    }
+    while (true) {
+        x3 = random_int(0, (BREED_SIZE * 0.5) - 1);
+        if (x1 != x3 && x2 != x3) break;
+    }
+    while (true) {
+        x4 = random_int(0, (BREED_SIZE * 0.5) - 1);
+        if (x1 != x4 && x2 != x4 && x3 != x4) break;
+    }
+
+    for(int i = 0; i < 3; ++i){
+        out.push_back(v[x1][i]);
+    }
+    for(int i = 3; i < 7; ++i){
+        out.push_back(v[x2][i]);
+    }
+    for(int i = 7; i < v[0].size()/2; ++i){
+        out.push_back(v[x3][i]);
+    }
+    for(int i = v[0].size()/2; i < v[0].size(); ++i){
+        out.push_back(v[x4][i]);
+    }
+    return out;
 }
 
 string Subject::print(const unordered_map<int, string> &reverse_teacher_mapping,
